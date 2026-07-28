@@ -46,13 +46,23 @@ def main():
         if df is None:
             continue
 
+        # Google Trends는 검색량이 부족한 키워드를 응답에서 아예 빼버립니다.
+        # 그대로 df[batch]를 쓰면 KeyError로 스크립트 전체가 죽으므로,
+        # 실제로 응답에 들어 있는 키워드만 골라서 저장합니다.
+        available = [kw for kw in batch if kw in df.columns]
+        missing = [kw for kw in batch if kw not in df.columns]
+        if missing:
+            print(f"[안내] 데이터 부족으로 건너뜀: {missing}")
+        if not available:
+            continue
+
         # 최근 7일 평균 관심도를 오늘 날짜 기준 스코어로 저장
-        avg_scores = df[batch].mean()
-        for kw in batch:
+        avg_scores = df[available].mean()
+        for kw in available:
             rows.append({
                 "date": today,
                 "keyword": kw,
-                "trend_score_avg_7d": round(avg_scores[kw], 1),
+                "trend_score_avg_7d": round(float(avg_scores[kw]), 1),
             })
 
         time.sleep(2)  # 과도한 호출 방지용 딜레이
